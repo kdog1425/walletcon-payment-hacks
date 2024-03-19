@@ -1,0 +1,17 @@
+{
+  "name": "payment-protocol",
+  "version": "0.0.1",
+  "scripts": {
+    "generate-data-interfaces": "ts-node ./generate-data-interfaces.ts"
+  },
+  "author": "Daniel Prinz",
+  "license": "ISC",
+  "dependencies": {
+    "openapi-typescript-codegen": "^0.28.0",
+    "ts-node": "^10.9.2"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/uuid": "^9.0.8"
+  }
+}
