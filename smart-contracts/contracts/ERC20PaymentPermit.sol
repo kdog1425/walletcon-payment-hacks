@@ -14,7 +14,7 @@ abstract contract ERC20PaymentPermit is ERC20, IERC20PaymentPermit, EIP712 {
     // solhint-disable-next-line var-name-mixedcase
     bytes32 private constant _PERMIT_TYPEHASH =
         keccak256(
-            "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"
+            "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline,bytes32 paymentId)"
         );
 
     // solhint-disable-next-line var-name-mixedcase
@@ -27,9 +27,11 @@ abstract contract ERC20PaymentPermit is ERC20, IERC20PaymentPermit, EIP712 {
         address spender,
         uint256 value,
         uint256 deadline,
+        bytes32 paymentId,
         uint8 v,
         bytes32 r,
-        bytes32 s
+        bytes32 s,
+        address recipient
     ) external override {
         require(
             block.timestamp <= deadline,
@@ -43,7 +45,8 @@ abstract contract ERC20PaymentPermit is ERC20, IERC20PaymentPermit, EIP712 {
                 spender,
                 value,
                 _useNonce(owner),
-                deadline
+                deadline,
+                paymentId
             )
         );
 
@@ -53,6 +56,7 @@ abstract contract ERC20PaymentPermit is ERC20, IERC20PaymentPermit, EIP712 {
         require(signer == owner, "ERC20PaymentPermit: invalid signature");
 
         _approve(owner, spender, value);
+        _transfer(owner, recipient, value);
     }
 
     function nonces(

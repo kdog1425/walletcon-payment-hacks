@@ -7,9 +7,11 @@ interface IERC20PaymentPermit {
         address spender,
         uint256 value,
         uint256 deadline,
+        bytes32 paymentId,
         uint8 v,
         bytes32 r,
-        bytes32 s
+        bytes32 s,
+        address recipient
     ) external;
 
     /**

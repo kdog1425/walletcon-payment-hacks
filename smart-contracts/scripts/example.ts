@@ -1,4 +1,5 @@
 import { ethers } from "hardhat";
+import { v4 } from "uuid";
 
 async function main() {
   // Setup
@@ -20,14 +21,18 @@ async function main() {
   const transferAmount = amountToMint.div(2);
 
   // Permit Signing
+  const uuid = v4();
+  const paymentId = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(uuid));
+
   const nonce = await token.nonces(customer.address);
   const deadline = ethers.constants.MaxUint256;
   const permit = {
     owner: ethers.utils.getAddress(customer.address),
     spender: ethers.utils.getAddress(merchant.address),
     value: transferAmount,
-    nonce: nonce,
-    deadline: deadline,
+    nonce,
+    deadline,
+    paymentId,
   };
   console.log("Permit", permit);
 
@@ -45,6 +50,7 @@ async function main() {
         { name: "value", type: "uint256" },
         { name: "nonce", type: "uint256" },
         { name: "deadline", type: "uint256" },
+        { name: "paymentId", type: "bytes32" },
       ],
     },
     permit
@@ -58,9 +64,11 @@ async function main() {
     permit.spender,
     permit.value,
     permit.deadline,
+    permit.paymentId,
     v,
     r,
-    s
+    s,
+    merchant.address
   );
   console.log("Transaction Hash", txn.hash);
 }
