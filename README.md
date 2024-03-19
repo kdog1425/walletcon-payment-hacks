@@ -5,7 +5,7 @@ sequenceDiagram
     Wallet-->>Merchant: GET baseEP/payment-details
     Merchant-->>Wallet: payment details
     Wallet-->>Wallet: sign Permit
-    Wallet-->>Merchant: signed Permit
+    Wallet-->>Merchant: POST baseEP/payment-details wih signed Permit as payload
     Merchant-->>Merchant: validate Permit with paymentId
     Merchant-->>LisbonERC20: invoke SC
     LisbonERC20-->>LisbonERC20: verify Permit, invoke Transfer
