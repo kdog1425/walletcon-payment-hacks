@@ -1,8 +1,8 @@
 # walletcon-payment-hacks
 ```mermaid
 sequenceDiagram
-    Merchant->>+Wallet: QR link with base endpoint (baseEP)
-    Wallet->>+Merchant: GET baseEP/payment-details
+    Merchant-->>Wallet: QR link with base endpoint (baseEP)
+    Wallet-->>Merchant: GET baseEP/payment-details
     Merchant-->>Wallet: payment details
     Wallet-->>Wallet: sign Permit
     Wallet-->>Merchant: signed Permit
