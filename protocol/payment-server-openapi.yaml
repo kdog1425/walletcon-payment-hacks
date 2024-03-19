@@ -1,0 +1,541 @@
+openapi: "3.0.2"
+info:
+  title: API Title
+  version: "1.0"
+paths:
+  /payment/{paymentUniqueId}:
+    get:
+      summary: Get Payment Details
+      description: Allows the wallet to obtain a payment information from the payments server, given
+        a unique payment id
+      tags:
+        - Payments
+      parameters:
+        - name: paymentUniqueId
+          in: path
+          required: true
+          description: Unique payment ID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Payment details
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/PaymentDetails"
+        '404':
+          description: The method does not exist / is not available
+        '400':
+          description: One or more parameters are invalid or missing
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InvalidParameterError"
+    post:
+      summary: Authorize Payment
+      description: Allows the wallet to authorize a payment with a permit
+      tags:
+          - Payments
+      parameters:
+        - name: paymentUniqueId
+          in: path
+          required: true
+          description: Unique payment ID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              "$ref": "#/components/schemas/PaymentPermit"
+      responses:
+        '200':
+          description: Payment details
+        '404':
+          description: The method does not exist / is not available
+        '400':
+          description: One or more parameters are invalid or missing
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/InvalidParameterError"
+components:
+  schemas:
+    Any:
+      description: something
+    Error:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+        data:
+          oneOf:
+            - "$ref": "#/components/schemas/Any"
+            - type: string
+            - type: array
+            - type: boolean
+            - type: integer
+            - type: number
+    InvalidParameterError:
+      allOf:
+        - "$ref": "#/components/schemas/Error"
+        - type: object
+          properties:
+            code:
+              type: integer
+              format: int32
+              enum:
+                - 1
+              description: Invalid or missing parameter(s)
+    PaymentId:
+      type: string
+      description: Unique payment ID. This value should be globally unique.
+      format: uuid
+    Amount:
+      type: object
+      properties:
+        amount:
+          type: integer
+          format: int64
+          description: The amount of the transfer. Base units are the same as for on-chain
+            transactions for this currency.
+        currency:
+          "$ref": "#/components/schemas/Cryptocurrency"
+
+    PaymentDetails:
+      type: object
+      properties:
+        paymentId:
+          "$ref": "#/components/schemas/PaymentId"
+        recipient:
+          "$ref": "#/components/schemas/RecipientData"
+        paymentRequest:
+          "$ref": "#/components/schemas/PaymentRequest"
+        description:
+          type: string
+          description: Description of the payment. To be displayed to the customer
+          example: payment request description
+      required:
+        - paymentId
+        - receiver
+        - paymentRequest
+    Address:
+      type: object
+      properties:
+        city:
+          type: string
+          example: San Francisco
+          description: The city, district, suburb, town, or village
+        country:
+          type: string
+          example: US
+          minLength: 2
+          maxLength: 2
+          description: Two-letter (ISO country code)[https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2]
+        line1:
+          type: string
+          example: 1260 Market Street
+          description: Address line 1
+        line2:
+          type: string
+          example: Suite 450
+          description: Address line 2 - apartment, unit, etc.
+        postalCode:
+          type: string
+          example: '94103'
+          description: ZIP or postal code
+        state:
+          type: string
+          example: CA
+          description: State, county, province, region
+    RecipientData:
+      type: object
+      required:
+        - name
+      description: Includes the details of the merchant to be displayed to the payer
+      properties:
+        paymentOptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentOption'
+        name:
+          type: string
+          example: Acme
+          description: Recipient's display name. Should be recognizable by the payer
+        legalName:
+          type: string
+          example: Acme Technologies Inc.
+          description: The legal entity name
+        imageUrl:
+          type: string
+          format: url
+          description: URL of the logo/avatar of the recipient
+          example: https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Acme_Markets_lolo.svg/1200px-Acme_Markets_lolo.svg.png
+        websiteUrl:
+          type: string
+          format: url
+          description: URL of the recipient's website
+          example: https://www.acme.com
+        address:
+          "$ref": "#/components/schemas/Address"
+    PaymentOption:
+      type: object
+      properties:
+        amount:
+          $ref: '#/components/schemas/Amount'
+        payToAddress:
+          "$ref": "#/components/schemas/CryptocurrencyAddress"
+      required:
+        - amount
+        - payToAddress
+    PaymentAction:
+      type: object
+      required:
+        - amount
+        - currency
+        - action
+        - timestamp
+      description: Information regarding the type of payment and payment amount
+      properties:
+        amount:
+          type: integer
+          minimum: 0
+          format: uint64
+          example: 452
+          description: Amount of the transfer. Base units are the same as for on-chain
+            transactions for this currency.
+        currency:
+          type: string
+          enum:
+            - cUSD
+          default: cUSD
+          description: One of the supported on-chain currency types, e.g. cUSD. At
+            the moment, cUSD is the only allowed value.
+        action:
+          type: string
+          enum:
+            - charge
+          default: charge
+          description: This value indicates the requested action to perform. At the
+            moment, charge is the only allowed value.
+        timestamp:
+          type: integer
+          minimum: 0
+          format: uint32
+          description: Unix timestamp indicating the time that the payment was created
+    PaymentItem:
+      type: object
+      properties:
+        id:
+          type: string
+          description: A unique identifier for the payment item.
+        image:
+          type: string
+          description: (Optional) A URL to an image of the item.
+          nullable: true
+        description:
+          type: string
+          description: A human-readable description of the item.
+        quantity:
+          type: integer
+          description: The number of units of the item.
+        unit_price:
+          type: number
+          format: float
+          description: The price of a single unit of the item, before tax.
+        total_price:
+          type: number
+          format: float
+          description: The total price of the item, including tax (if applicable).
+        tax:
+          type: number
+          format: float
+          description: (Optional) The amount of tax applied to the item.
+          nullable: true
+        tax_rate:
+          type: number
+          format: float
+          description: (Optional) The tax rate applied to the item, as a percentage.
+          nullable: true
+    FeeItem:
+      type: object
+      properties:
+        fee:
+          type: number
+          format: float
+          description: (Optional) Any additional fees associated with the payment.
+          nullable: true
+        feeType:
+          type: string
+          enum:
+            - delivery
+            - packaging
+            - import
+            - other
+          description: (Optional) The cost of delivery.
+          nullable: true
+        feeDescription:
+          type: string
+          description: (Optional) Type of fees that were applied to the payment.
+          nullable: true
+    PaymentRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentItem'
+          description: An array of items to be paid for.
+        subtotal:
+          type: number
+          format: float
+          description: The total price of all items before tax.
+        totalTax:
+          type: number
+          format: float
+          description: The total amount of tax applied to all items.
+          nullable: true
+        fees:
+          type: array
+          items:
+            $ref: '#/components/schemas/FeeItem'
+        totalAmount:
+          type: number
+          format: float
+          description: The total amount to be paid, including items, tax, fees, and delivery.
+      required:
+        - totalAmount
+    CryptocurrencyAddress:
+      type: object
+      properties:
+          cryptocurrency:
+            oneOf:
+                - "$ref": "#/components/schemas/NativeCryptocurrency"
+                - "$ref": "#/components/schemas/TokenAsset"
+          address:
+            type: string
+          tag:
+            type: string
+      required:
+        - cryptocurrency
+        - address
+    Cryptocurrency:
+      oneOf:
+        - $ref: '#/components/schemas/NativeCryptocurrency'
+        - $ref: '#/components/schemas/TokenAsset'
+    NativeCryptocurrency:
+      type: object
+      required:
+        - cryptocurrencySymbol
+      properties:
+        blockchain:
+          $ref: '#/components/schemas/Blockchain'
+        cryptocurrencySymbol:
+          $ref: '#/components/schemas/CryptocurrencySymbol'
+        testAsset:
+          type: boolean
+    TokenAsset:
+      type: object
+      properties:
+        testAsset:
+          type: boolean
+      anyOf:
+        - $ref: '#/components/schemas/Erc20Token'
+        - $ref: '#/components/schemas/Bep20Token'
+        - $ref: '#/components/schemas/StellarToken'
+    Blockchain:
+      type: string
+      enum:
+        - Algorand
+        - Arbitrum
+        - Astar
+        - Aurora
+        - Avalanche
+        - Axelar
+        - Base
+        - Bitcoin
+        - Bitcoin Cash
+        - Bitcoin Cash ABC
+        - Bitcoin SV
+        - Bitkub Chain
+        - BNB
+        - Canto
+        - Cardano
+        - Celestia
+        - Celo
+        - Chiliz Chain
+        - Chiliz Legacy Chain
+        - Cortex
+        - Cosmos
+        - Dash
+        - Dogecoin
+        - DYDX
+        - eCash
+        - EOS
+        - Ethereum
+        - Ethereum Classic
+        - EthereumPoW
+        - Evmos
+        - Fantom Opera
+        - Flare
+        - Hedera
+        - HT Chain
+        - KAVA
+        - Kusama
+        - Litecoin
+        - Moonbeam
+        - Moonriver
+        - NEAR Protocol
+        - NEM NIS1
+        - Oasys
+        - Optimism
+        - Osmosis
+        - Palm
+        - Polkadot
+        - Polygon PoS
+        - Ronin
+        - RSK
+        - Shimmer
+        - Solana
+        - Songbird Canary-Network
+        - Stellar
+        - SX Network
+        - Terra 2.0
+        - Terra Classic
+        - Tezos
+        - TokenEX
+        - TRON
+        - Velas
+        - WEMIX
+        - XDB Chain
+        - XinFin Network
+        - XRP
+        - ZCash
+    CryptocurrencySymbol:
+      type: string
+      enum:
+        - ADA
+        - ALGO
+        - ARB
+        - ASTR
+        - ATOM
+        - AURORA
+        - AVAX
+        - AXL
+        - BASE
+        - BCH
+        - BCHA
+        - BITKUB
+        - BNB
+        - BSV
+        - BTC
+        - CANTO
+        - CELESTIA
+        - CELO
+        - CHZ
+        - CHZ2
+        - CTXC
+        - DASH
+        - DOGE
+        - DOT
+        - DYDX
+        - EOS
+        - ETC
+        - ETH
+        - ETHW
+        - EVMOS
+        - FLR
+        - FTM
+        - GLMR
+        - HBAR
+        - HT
+        - KAVA
+        - KSM
+        - LTC
+        - LUNA
+        - LUNA2
+        - MATIC
+        - MOVR
+        - NEAR
+        - OAS
+        - OPT
+        - OSMO
+        - PALM
+        - RON
+        - RSK
+        - SMR
+        - SOL
+        - SONGBIRD
+        - SXNETWORK
+        - TKX
+        - TRX
+        - VLX
+        - WEMIX
+        - XDB
+        - XDC
+        - XEC
+        - XEM
+        - XLM
+        - XRP
+        - XTZ
+        - ZEC
+    Erc20Token:
+        type: object
+        required: [ blockchain, contractAddress, type ]
+        properties:
+          type:
+            enum: [ Erc20Token ]
+          blockchain:
+            $ref: '#/components/schemas/Blockchain'
+          contractAddress:
+            type: string
+        example:
+          type: Erc20Token
+          blockchain: Ethereum
+          contractAddress: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
+    Bep20Token:
+      type: object
+      required: [ blockchain, contractAddress, type ]
+      properties:
+        type:
+          enum: [ Bep20Token ]
+        blockchain:
+          $ref: '#/components/schemas/Blockchain'
+        contractAddress:
+          type: string
+    StellarToken:
+      type: object
+      required: [ blockchain, issuerAddress, stellarCurrencyCode, type ]
+      properties:
+        type:
+          enum: [ StellarToken ]
+        blockchain:
+          $ref: '#/components/schemas/Blockchain'
+        issuerAddress:
+          type: string
+        stellarCurrencyCode:
+          type: string
+    SolanaToken:
+      type: object
+      required: [ blockchain, issuerAddress, stellarCurrencyCode, type ]
+      properties:
+        type:
+          enum: [ SolanaToken ]
+        blockchain:
+          $ref: '#/components/schemas/Blockchain'
+        mintAuthority:
+          type: string
+        freezeAuthority:
+          type: string
+
+    PaymentPermit:
+      "$ref": "#/components/schemas/Any"
