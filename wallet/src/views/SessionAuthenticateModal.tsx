@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { useSnapshot } from 'valtio'
-import { Col, Divider, Row, Text, Code, Checkbox, Grid } from '@nextui-org/react'
+import { Col, Divider, Row, Text, Code, Checkbox, Grid, Card, Collapse, Textarea } from '@nextui-org/react'
 import { buildAuthObject, getSdkError, populateAuthPayload } from '@walletconnect/utils'
 
 import ModalFooter from '@/components/ModalFooter'
@@ -15,6 +15,116 @@ import RequestModal from './RequestModal'
 import { EIP155_CHAINS, EIP155_SIGNING_METHODS } from '@/data/EIP155Data'
 import { styledToast } from '@/utils/HelperUtil'
 
+import { CryptocurrencySymbol, PaymentDetails, PaymentItem } from '@/interfaces';
+import { decodeReCapUri, isRecapUri, getPaymentUrls } from '@/utils/recap';
+
+async function getPaymentRequestDetails(paymentDetailsUrl: string): Promise<PaymentDetails> {
+  return {
+    paymentId: paymentDetailsUrl,
+    recipient: {
+      name: 'amazon.com',
+      legalName: 'Amazon.com, Inc.',
+      websiteUrl: 'https://www.amazon.com',
+      imageUrl: 'https://www.amazon.com/favicon.ico',
+      paymentOptions: [
+        {
+          amount: {
+            amount: 20.5,
+            currency: { cryptocurrencySymbol: CryptocurrencySymbol.ETH }
+          },
+          payToAddress: {
+            cryptocurrency: { cryptocurrencySymbol: CryptocurrencySymbol.ETH },
+            address: '0x1234',
+          },
+        }
+      ],
+    },
+    paymentRequest: {
+      totalAmount: 20.5,
+      items: [
+        {
+          id: 'product1',
+          description: 'WalletConnect T-Shirt',
+          image: 'https://media.licdn.com/dms/image/D5603AQHUlpdAWNJUrA/profile-displayphoto-shrink_800_800/0/1680013647317?e=2147483647&v=beta&t=phUpAvLD8WkyLu1tLGmi1iODFzFr-3yDnZx4txrLZNQ',
+          quantity: 1,
+          unit_price: 20.5,
+          total_price: 20.5,
+        }
+      ]
+    }
+  };
+}
+
+interface AuthenticationMessageProps {
+  messages: string[];
+  waitForPayment: boolean;
+  payment?: PaymentDetails;
+}
+
+function ItemCard({ item }: { item: PaymentItem }) {
+  return <Card bordered={true}>
+    <Row gap={1}>{item.description}</Row>
+    <Row gap={1} justify="flex-end">
+      <Text color="gray" small={true}>{item.quantity} × ${item.unit_price} =</Text>
+      <Text small={true}> ${item.total_price}</Text>
+    </Row>
+    <Card.Image width="100%" height={140} alt={item.description ?? 'Product'} src={item.image ?? '/assets/no-image.svg'} objectFit="cover"/>
+  </Card>;
+}
+
+function AuthenticationMessage({ messages, waitForPayment, payment }: AuthenticationMessageProps) {
+  if (waitForPayment) {
+    if (!payment) {
+      return <Row><Col>
+        <Text h5>Waiting for payment...</Text>
+      </Col></Row>
+    }
+
+    const items = payment.paymentRequest.items;
+    if (!items) {
+      throw Error('Payment request without items');
+    }
+
+    return <Fragment>
+      {items.map((item, i) => {
+        return <ItemCard key={i} item={item}/>;
+      })}
+      <Row gap={1} justify="flex-end">
+        <Col span={4}><Text>Total: ${payment.paymentRequest.totalAmount}</Text></Col>
+      </Row>
+      <Row>
+        <Col>
+          <Collapse.Group >
+            <Collapse title="Full request statement">
+              {messages.map((message, index) => {
+                console.log('@loop messageToSign', message)
+                return (
+                  <Textarea key={index} width="100%"
+                            readOnly={true}
+                            initialValue={message}
+                  />
+                )
+              })}
+            </Collapse>
+          </Collapse.Group>
+        </Col>
+      </Row>
+    </Fragment>
+  }
+
+  return <Row><Col>
+    <Text h5>Messages to Sign ({messages.length})</Text>
+    {messages.map((message, index) => {
+      console.log('@loop messageToSign', message)
+      return (
+        <Code key={index}>
+          <Text color="$gray400">{message}</Text>
+        </Code>
+      )
+    })}
+  </Col></Row>;
+}
+
 export default function SessionAuthenticateModal() {
   // Get request and wallet data from store
   const authRequest = ModalStore.state.data?.authRequest
@@ -27,6 +137,9 @@ export default function SessionAuthenticateModal() {
   const [supportedMethods] = useState<string[]>(Object.values(EIP155_SIGNING_METHODS))
   const [signStrategy, setSignStrategy] = useState(1)
   // Ensure request and wallet are defined
+
+  const [waitForPayment, setWaitForPayment] = useState<boolean>(false);
+  const [paymentDetails, setPaymentDetails] = useState<PaymentDetails | undefined>();
 
   const address = eip155Addresses[account]
 
@@ -52,6 +165,23 @@ export default function SessionAuthenticateModal() {
       chains: supportedChains,
       methods: supportedMethods
     })
+
+    const recaps = newAuthPayload.resources?.filter(isRecapUri).map(decodeReCapUri) || [];
+    const paymentUrls = recaps.map(getPaymentUrls).flat();
+
+    // Assuming for now that we only have one payment request
+    if (paymentUrls.length > 1) {
+      throw new Error('Multiple payment requests are not supported');
+    }
+    if (paymentUrls.length === 1) {
+      setWaitForPayment(true);
+
+      const fetchPaymentDetails = async () => {
+        setPaymentDetails(await getPaymentRequestDetails(paymentUrls[0]));
+      }
+
+      fetchPaymentDetails();
+    }
 
     if (signStrategy === 1) {
       try {
@@ -129,11 +259,12 @@ export default function SessionAuthenticateModal() {
 
   return (
     <RequestModal
-      intention="request a signature"
+      intention={waitForPayment ? "requests payment authorization" : "requests a signature"}
       metadata={authRequest?.params?.requester.metadata!}
       onApprove={onApprove}
       onReject={onReject}
     >
+      {messages.length > 1 &&
       <Grid.Container>
         <Grid>
           <Checkbox onChange={() => setSignStrategy(1)} checked={signStrategy === 1}>
@@ -145,20 +276,11 @@ export default function SessionAuthenticateModal() {
             Sign All
           </Checkbox>
         </Grid>
-      </Grid.Container>
-      <Row>
-        <Col>
-          <Text h5>Messages to Sign ({messages.length})</Text>
-          {messages.map((message, index) => {
-            console.log('@loop messageToSign', message)
-            return (
-              <Code key={index}>
-                <Text color="$gray400">{message.message}</Text>
-              </Code>
-            )
-          })}
-        </Col>
-      </Row>
+      </Grid.Container>}
+      <AuthenticationMessage
+        messages={messages.map(m => m.message)}
+        waitForPayment={waitForPayment}
+        payment={paymentDetails} />
     </RequestModal>
   )
 }

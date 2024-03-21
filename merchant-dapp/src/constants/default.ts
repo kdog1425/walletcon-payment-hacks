@@ -47,11 +47,11 @@ export const DEFAULT_RELAY_URL = process.env.NEXT_PUBLIC_RELAY_URL;
 export const DEFAULT_LOGGER = "debug";
 
 export const DEFAULT_APP_METADATA = {
-  name: "React App",
-  description: "React App for WalletConnect",
-  url: "https://walletconnect.com/",
-  icons: ["https://avatars.githubusercontent.com/u/37784886"],
-  verifyUrl: "https://verify.walletconnect.com",
+  name: "amazon.com",
+  description: "Amazon.com for WalletConnect",
+  url: "https://amazon.com/",
+  icons: ['https://www.amazon.com/favicon.ico'],
+  verifyUrl: "https://verify.amazon.com",
 };
 
 /**

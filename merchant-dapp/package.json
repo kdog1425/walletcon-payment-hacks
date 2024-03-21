@@ -25,6 +25,7 @@
     "@walletconnect/utils": "2.11.2-rc-sign2.5-1",
     "@web3modal/standalone": "2.4.3",
     "axios": "^1.0.0",
+    "base64url": "^3.0.1",
     "blockies-ts": "^1.0.0",
     "bs58": "^5.0.0",
     "cosmos-wallet": "^1.2.0",
