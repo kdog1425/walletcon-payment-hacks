@@ -154,7 +154,7 @@ function AuthenticationMessage({ messages, waitForPayment, payment }: Authentica
       <PaymentOptions paymentOptions={payment.recipient?.paymentOptions ?? []}/>
         <Col>
           <Collapse.Group>
-            <Collapse title="Full request statement">
+            <Collapse title="Show payment request statement" css={{'& h3': {fontSize: '1em', fontWeight: '$light'}}}>
               {messages.map((message, index) => {
                 console.log('@loop messageToSign', message)
                 return (
