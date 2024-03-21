@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { useSnapshot } from 'valtio'
-import { Col, Divider, Row, Text, Code, Checkbox, Grid, Card, Collapse, Textarea } from '@nextui-org/react'
+import { Col, Divider, Row, Text, Code, Checkbox, Grid, Card, Collapse, Textarea, Spacer } from '@nextui-org/react'
 import { buildAuthObject, getSdkError, populateAuthPayload } from '@walletconnect/utils'
 
 import ModalFooter from '@/components/ModalFooter'
@@ -15,7 +15,15 @@ import RequestModal from './RequestModal'
 import { EIP155_CHAINS, EIP155_SIGNING_METHODS } from '@/data/EIP155Data'
 import { styledToast } from '@/utils/HelperUtil'
 
-import { CryptocurrencySymbol, PaymentDetails, PaymentItem } from '@/interfaces';
+import {
+  CryptocurrencySymbol,
+  PaymentDetails,
+  PaymentItem,
+  type PaymentOption,
+  Cryptocurrency,
+  NativeCryptocurrency,
+  type Erc20Token, type Bep20Token
+} from '@/interfaces';
 import { decodeReCapUri, isRecapUri, getPaymentUrls } from '@/utils/recap';
 
 async function getPaymentRequestDetails(paymentDetailsUrl: string): Promise<PaymentDetails> {
@@ -29,12 +37,22 @@ async function getPaymentRequestDetails(paymentDetailsUrl: string): Promise<Paym
       paymentOptions: [
         {
           amount: {
-            amount: 20.5,
+            amount: 0.0003,
             currency: { cryptocurrencySymbol: CryptocurrencySymbol.ETH }
           },
           payToAddress: {
             cryptocurrency: { cryptocurrencySymbol: CryptocurrencySymbol.ETH },
-            address: '0x1234',
+            address: '0x0b0f4A6236ff74e52D2874BBED09A39603F422C8',
+          },
+        },
+        {
+          amount: {
+            amount: 0.000015,
+            currency: { cryptocurrencySymbol: CryptocurrencySymbol.BTC }
+          },
+          payToAddress: {
+            cryptocurrency: { cryptocurrencySymbol: CryptocurrencySymbol.BTC },
+            address: '16ftSEQ4ctQFDtVZiUBusQUjRrGhM3JYwe',
           },
         }
       ],
@@ -72,6 +90,48 @@ function ItemCard({ item }: { item: PaymentItem }) {
   </Card>;
 }
 
+function CryptocurrencyId({ currency }: { currency?: Cryptocurrency }) {
+  if (!currency) {
+    return <Text span={true}>Unknown Currency</Text>;
+  }
+  if (currency.hasOwnProperty('cryptocurrencySymbol')) {
+    return <Text span={true}>{(currency as NativeCryptocurrency).cryptocurrencySymbol}</Text>
+  }
+  if (currency.hasOwnProperty('contractAddress')) {
+    const token = currency as (Erc20Token | Bep20Token);
+    return <Text span={true}>{token.blockchain} token {token.contractAddress}</Text>
+  }
+  return <Text span={true}>Some Currency</Text>
+}
+
+function shorten(s: string, maxLen: number): string {
+  if (s.length <= maxLen) {
+    return s;
+  }
+
+  const segmentLen = Math.floor((maxLen - 1) / 2);
+  return s.slice(0, segmentLen) + '⋯' + s.slice(-segmentLen);
+}
+
+function PaymentOptions({ paymentOptions }: { paymentOptions: Array<PaymentOption> }) {
+  return <Fragment>
+    <Row>
+        <Text h4>Payment options</Text>
+    </Row>
+    {paymentOptions.map((paymentOption, index) => {
+      return <Checkbox size="sm" key={index}>
+        {paymentOption.amount.amount}
+        <Spacer x={0.3} />
+        <CryptocurrencyId currency={paymentOption.amount.currency}/>
+        <Spacer x={0.5} />
+        <Text color="gray" span={true}>To:</Text>
+        <Spacer x={0.3} />
+        <Text small={true} span={true}>{shorten(paymentOption.payToAddress.address, 20)}</Text>
+      </Checkbox>;
+    })}
+  </Fragment>;
+}
+
 function AuthenticationMessage({ messages, waitForPayment, payment }: AuthenticationMessageProps) {
   if (waitForPayment) {
     if (!payment) {
@@ -92,7 +152,7 @@ function AuthenticationMessage({ messages, waitForPayment, payment }: Authentica
       <Row gap={1} justify="flex-end">
         <Col span={4}><Text>Total: ${payment.paymentRequest.totalAmount}</Text></Col>
       </Row>
-      <Row>
+      <PaymentOptions paymentOptions={payment.recipient?.paymentOptions ?? []}/>
         <Col>
           <Collapse.Group >
             <Collapse title="Full request statement">
@@ -108,7 +168,6 @@ function AuthenticationMessage({ messages, waitForPayment, payment }: Authentica
             </Collapse>
           </Collapse.Group>
         </Col>
-      </Row>
     </Fragment>
   }
 
