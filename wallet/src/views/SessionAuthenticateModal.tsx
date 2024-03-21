@@ -1,6 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import { useSnapshot } from 'valtio'
-import { Col, Divider, Row, Text, Code, Checkbox, Grid, Card, Collapse, Textarea, Spacer } from '@nextui-org/react'
+import { Col, Divider, Row, Text, Code, Checkbox, Grid, Card, Collapse, Textarea, Spacer, Radio } from '@nextui-org/react'
 import { buildAuthObject, getSdkError, populateAuthPayload } from '@walletconnect/utils'
 
 import ModalFooter from '@/components/ModalFooter'
@@ -114,12 +114,11 @@ function shorten(s: string, maxLen: number): string {
 }
 
 function PaymentOptions({ paymentOptions }: { paymentOptions: Array<PaymentOption> }) {
-  return <Fragment>
-    <Row>
-        <Text h4>Payment options</Text>
-    </Row>
+  return <Radio.Group size="sm">
+    <Radio.Desc>Payment options</Radio.Desc>
     {paymentOptions.map((paymentOption, index) => {
-      return <Checkbox size="sm" key={index}>
+      return (
+      <Radio value={index} key={index} squared={true} checked={index == 0}>
         {paymentOption.amount.amount}
         <Spacer x={0.3} />
         <CryptocurrencyId currency={paymentOption.amount.currency}/>
@@ -127,9 +126,9 @@ function PaymentOptions({ paymentOptions }: { paymentOptions: Array<PaymentOptio
         <Text color="gray" span={true}>To:</Text>
         <Spacer x={0.3} />
         <Text small={true} span={true}>{shorten(paymentOption.payToAddress.address, 20)}</Text>
-      </Checkbox>;
+      </Radio>);
     })}
-  </Fragment>;
+  </Radio.Group>;
 }
 
 function AuthenticationMessage({ messages, waitForPayment, payment }: AuthenticationMessageProps) {
@@ -154,7 +153,7 @@ function AuthenticationMessage({ messages, waitForPayment, payment }: Authentica
       </Row>
       <PaymentOptions paymentOptions={payment.recipient?.paymentOptions ?? []}/>
         <Col>
-          <Collapse.Group >
+          <Collapse.Group>
             <Collapse title="Full request statement">
               {messages.map((message, index) => {
                 console.log('@loop messageToSign', message)
