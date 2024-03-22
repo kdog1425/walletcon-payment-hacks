@@ -15,6 +15,7 @@ interface PairingModalProps {
   connect: (params?: {
     pairing?: { topic: string };
     strategy?: 1 | 2 | 3 | 4;
+    paymentId: string;
   }) => Promise<void>;
   strategy?: 1 | 2 | 3 | 4;
 }
@@ -27,7 +28,7 @@ const PairingModal = (props: PairingModalProps) => {
     async (pairing: PairingTypes.Struct) => {
       try {
         setPairing(pairing);
-        await connect({ pairing, strategy });
+        await connect({ pairing, strategy, paymentId: 'x1' });
       } catch (error) {
         toast.error((error as Error).message, {
           position: "bottom-left",
@@ -54,7 +55,7 @@ const PairingModal = (props: PairingModalProps) => {
           />
         ))}
       </STable>
-      <Button onClick={() => connect({ strategy })}>{`New Pairing`}</Button>
+      <Button onClick={() => connect({ strategy, paymentId: 'x2' })}>{`New Pairing`}</Button>
     </SModalContainer>
   );
 };

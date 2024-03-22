@@ -22,6 +22,7 @@ import {
   DEFAULT_LOGGER,
   DEFAULT_PROJECT_ID,
   DEFAULT_RELAY_URL,
+  DEFAULT_TEST_CHAINS,
 } from "../constants";
 import { AccountBalances, apiGetAccountBalance } from "../helpers";
 import {
@@ -41,6 +42,7 @@ interface IContext {
   connect: (params?: {
     pairing?: { topic: string };
     strategy?: 1 | 2 | 3 | 4;
+    paymentId: string;
   }) => Promise<void>;
   disconnect: () => Promise<void>;
   isInitializing: boolean;
@@ -92,17 +94,17 @@ export function ClientContextProvider({
   const [accounts, setAccounts] = useState<string[]>([]);
   const [solanaPublicKeys, setSolanaPublicKeys] =
     useState<Record<string, PublicKey>>();
-  const [chains, setChains] = useState<string[]>([]);
+  const [chains, setChains] = useState<string[]>([DEFAULT_TEST_CHAINS[0]]);
   const [relayerRegion, setRelayerRegion] = useState<string>(
     DEFAULT_RELAY_URL!
   );
-  const [onlySiwe, setOnlySiwe] = useState<boolean>(false);
+  const [onlySiwe, setOnlySiwe] = useState<boolean>(true);
   const [origin, setOrigin] = useState<string>(getAppMetadata().url);
   const reset = () => {
     setSession(undefined);
     setBalances({});
     setAccounts([]);
-    setChains([]);
+    setChains([DEFAULT_TEST_CHAINS[0]]);
     setRelayerRegion(DEFAULT_RELAY_URL!);
   };
 
@@ -152,6 +154,7 @@ export function ClientContextProvider({
     async (params?: {
       pairing?: { topic: string };
       strategy?: 1 | 2 | 3 | 4;
+      paymentId: string;
     }) => {
       if (typeof client === "undefined") {
         throw new Error("WalletConnect is not initialized");
@@ -197,7 +200,7 @@ export function ClientContextProvider({
             break;
           case 3:
             resourcesData.push(
-              makePaymentReCapUri(`${PAYMENT_DETAILS_URL}/123456`)
+              makePaymentReCapUri(`${PAYMENT_DETAILS_URL}/${params.paymentId}`)
             );
             break;
           case 4:

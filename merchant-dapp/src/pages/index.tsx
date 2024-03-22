@@ -51,6 +51,7 @@ import Icon from "../components/Icon";
 import OriginSimulationDropdown from "../components/OriginSimulationDropdown";
 import LoaderModal from "../modals/LoaderModal";
 import { set } from "fp-ts";
+import {Products} from "../components/Products";
 
 // Normal import does not work here
 const { version } = require("@walletconnect/sign-client/package.json");
@@ -112,7 +113,7 @@ const Home: NextPage = () => {
     }
   }, [session, modal]);
 
-  const onConnect = (connectStrategy: 1 | 2 | 3 | 4) => {
+  const onConnect = (connectStrategy: 1 | 2 | 3 | 4, paymentId: string) => {
     if (typeof client === "undefined") {
       throw new Error("WalletConnect is not initialized");
     }
@@ -122,7 +123,7 @@ const Home: NextPage = () => {
       openPairingModal();
     } else {
       // If no existing pairings are available, trigger `WalletConnectClient.connect`.
-      connect({ strategy: connectStrategy });
+      connect({ strategy: connectStrategy, paymentId });
     }
   };
 
@@ -510,50 +511,33 @@ const Home: NextPage = () => {
       <SLanding center>
         <Banner />
         <h6>{`Using v${version || "2.0.0-beta"}`}</h6>
+        <Products onBuy={(paymentId) => onConnect(3, paymentId)}/>
         <SButtonContainer>
-          <h6>Select chains:</h6>
-          <SToggleContainer>
-            <p>Testnets Only?</p>
-            <Toggle active={isTestnet} onClick={toggleTestnets} />
-          </SToggleContainer>
-          <SToggleContainer>
-            <p>SIWE Only?</p>
-            <Toggle active={onlySiwe} onClick={toggleOnlySiwe} />
-          </SToggleContainer>
-          {chainOptions.map((chainId) => (
-            <Blockchain
-              key={chainId}
-              chainId={chainId}
-              chainData={chainData}
-              onClick={handleChainSelectionClick}
-              active={chains.includes(chainId)}
-            />
-          ))}
           <div style={{ display: "flex" }}>
             <SConnectButton
               left
-              onClick={() => onConnect(1)}
+              onClick={() => onConnect(1, '')}
               disabled={!chains.length}
             >
               Connect
             </SConnectButton>
             <SConnectButton
               left
-              onClick={() => onConnect(2)}
+              onClick={() => onConnect(2, '')}
               disabled={!chains.length}
             >
               Multiple Resources
             </SConnectButton>
             <SConnectButton
               left
-              onClick={() => onConnect(3)}
+              onClick={() => onConnect(3, '666')}
               disabled={!chains.length}
             >
               Extra ReCaps
             </SConnectButton>
             <SConnectButton
               left
-              onClick={() => onConnect(4)}
+              onClick={() => onConnect(4, '')}
               disabled={!chains.length}
             >
               Mixed

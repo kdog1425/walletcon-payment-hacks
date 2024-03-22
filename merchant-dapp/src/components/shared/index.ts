@@ -12,6 +12,7 @@ export const SContainer = styled.div`
 
 export const STable = styled(SContainer)`
   flex-direction: column;
+  width: 100%;  
   text-align: left;
 `;
 
@@ -22,11 +23,11 @@ export const SRow = styled.div`
 `;
 
 export const SKey = styled.div`
-  width: 30%;
-  font-weight: 700;
+  width: 70%;
+  //font-weight: 700;
 `;
 
 export const SValue = styled.div`
-  width: 70%;
+  width: 30%;
   font-family: monospace;
 `;

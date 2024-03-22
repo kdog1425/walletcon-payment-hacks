@@ -26,18 +26,47 @@ import {
 } from '@/interfaces';
 import { decodeReCapUri, isRecapUri, getPaymentUrls } from '@/utils/recap';
 
-async function getPaymentRequestDetails(paymentDetailsUrl: string): Promise<PaymentDetails> {
+const RECEPIENT = {
+  name: 'amazon.com',
+  legalName: 'Amazon.com, Inc.',
+  websiteUrl: 'https://www.amazon.com',
+  imageUrl: 'https://www.amazon.com/favicon.ico',
+};
+
+const PRODUCTS: PaymentItem[] = [
+  {
+    id: 'product1',
+    description: 'WalletConnect T-Shirt',
+    image: 'https://media.licdn.com/dms/image/D5603AQHUlpdAWNJUrA/profile-displayphoto-shrink_800_800/0/1680013647317?e=2147483647&v=beta&t=phUpAvLD8WkyLu1tLGmi1iODFzFr-3yDnZx4txrLZNQ',
+    unit_price: 20.5,
+  },
+  {
+    id: 'product2',
+    description: 'Pasteis de Nata (3 units)',
+    image: 'https://live.staticflickr.com/2575/4075178544_c28b05c36d_b.jpg',
+    unit_price: 9.99,
+  },
+  {
+    id: 'product3',
+    description: '🔥WiFi Powder - Instant Internet',
+    unit_price: 37.9,
+  },
+];
+
+function round(decimalPlaces: number, value: number): number {
+  const factor = Math.pow(10, decimalPlaces);
+  return Math.round(value * factor) / factor;
+}
+
+const PAYMENTS: PaymentDetails[] = PRODUCTS.map((product) => {
   return {
-    paymentId: paymentDetailsUrl,
+    paymentId: product.id ?? 'productNoID?!',
     recipient: {
-      name: 'amazon.com',
-      legalName: 'Amazon.com, Inc.',
-      websiteUrl: 'https://www.amazon.com',
-      imageUrl: 'https://www.amazon.com/favicon.ico',
+      ...RECEPIENT,
       paymentOptions: [
         {
           amount: {
-            amount: 0.0003,
+            amount: round(6, product.unit_price! * 0.00029),
             currency: { cryptocurrencySymbol: CryptocurrencySymbol.ETH }
           },
           payToAddress: {
@@ -47,7 +76,7 @@ async function getPaymentRequestDetails(paymentDetailsUrl: string): Promise<Paym
         },
         {
           amount: {
-            amount: 0.000015,
+            amount: round(7, product.unit_price! * 0.000015),
             currency: { cryptocurrencySymbol: CryptocurrencySymbol.BTC }
           },
           payToAddress: {
@@ -58,19 +87,22 @@ async function getPaymentRequestDetails(paymentDetailsUrl: string): Promise<Paym
       ],
     },
     paymentRequest: {
-      totalAmount: 20.5,
+      totalAmount: product.unit_price!,
       items: [
         {
-          id: 'product1',
-          description: 'WalletConnect T-Shirt',
-          image: 'https://media.licdn.com/dms/image/D5603AQHUlpdAWNJUrA/profile-displayphoto-shrink_800_800/0/1680013647317?e=2147483647&v=beta&t=phUpAvLD8WkyLu1tLGmi1iODFzFr-3yDnZx4txrLZNQ',
+          ...product,
+          total_price: product.unit_price,
           quantity: 1,
-          unit_price: 20.5,
-          total_price: 20.5,
         }
       ]
     }
   };
+});
+
+
+async function getPaymentRequestDetails(paymentDetailsUrl: string): Promise<PaymentDetails> {
+  const paymentId = paymentDetailsUrl.split('/').pop();
+  return PAYMENTS.find((payment) => payment.paymentId === paymentId) ?? PAYMENTS[0];
 }
 
 interface AuthenticationMessageProps {
