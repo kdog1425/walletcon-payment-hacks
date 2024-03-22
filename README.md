@@ -1,13 +1,13 @@
 # walletcon-payment-hacks
 ```mermaid
 sequenceDiagram
-    Merchant-->>Wallet: QR link with base endpoint (baseEP)
-    Wallet-->>Merchant: GET baseEP/payment-details
+    Merchant-->>Wallet: QR link ReCap payment capabilities
+    Wallet-->>Merchant: GET payment
     Merchant-->>Wallet: payment details
-    Wallet-->>Wallet: sign Permit
-    Wallet-->>Merchant: POST baseEP/payment-details wih signed Permit as payload
-    Merchant-->>Merchant: validate Permit with paymentId
-    Merchant-->>LisbonERC20: invoke SC
-    LisbonERC20-->>LisbonERC20: verify Permit, invoke Transfer
-    Merchant-->>Merchant: clearing, upload receipt to IPFS
+    Wallet-->>Wallet: Sign permit
+    Wallet-->>Merchant: POST payment wih signed permit
+    Merchant-->>Merchant: Validate Permit with paymentId
+    Merchant-->>LisbonERC20: Invoke SC
+    LisbonERC20-->>LisbonERC20: Verify permit, invoke transfer
+    Merchant-->>Merchant: Clearing, upload receipt to IPFS
 ```
