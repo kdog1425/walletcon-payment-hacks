@@ -1,7 +1,7 @@
 # walletcon-payment-hacks
 ```mermaid
 sequenceDiagram
-    Merchant-->>Wallet: QR link ReCap payment capabilities
+    Merchant-->>Wallet: QR link with ReCap payment capabilities
     Wallet-->>Merchant: GET payment
     Merchant-->>Wallet: payment details
     Wallet-->>Wallet: Sign permit
